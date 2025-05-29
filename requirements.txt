@@ -1,0 +1,8 @@
+elevenlabs[pyaudio]
+fastapi
+uvicorn
+python-dotenv
+websockets
+numpy
+sounddevice
+python-multipart

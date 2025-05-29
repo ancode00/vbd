@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BotWot | Your AI Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Cyberpunk font -->
+    <link href="https://fonts.googleapis.com/css?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: #070b14;
+            color: #e2f7ff;
+            font-family: 'Orbitron', 'Inter', Arial, sans-serif;
+            overflow: hidden;
+        }
+        body:before {
+            content: "";
+            position: fixed; inset: 0; pointer-events: none;
+            background: repeating-linear-gradient(
+                125deg, transparent, transparent 3px, rgba(255,255,255,0.01) 4px
+            );
+            opacity: 0.07;
+            z-index: 1;
+        }
+        .center-mic {
+            position: absolute;
+            left: 50%;
+            top: 54%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+        #pulseCanvas {
+            margin-top: 3px;
+            width: 70px;
+            height: 240px;
+            z-index: 11;
+            pointer-events: none;
+            background: transparent;
+        }
+        .mic-btn {
+            background: linear-gradient(135deg, #00fff7 10%, #1e7cff 100%);
+            border: 0;
+            border-radius: 50%;
+            width: 72px;
+            height: 72px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 4px;
+            cursor: pointer;
+            position: relative;
+            transition: box-shadow 0.22s, transform 0.15s;
+            box-shadow: 0 0 30px #00fff799, 0 2px 12px #18d7ff50;
+        }
+        .mic-btn.listening {
+            animation: neon-btn 1.05s infinite alternate;
+            box-shadow: 0 0 44px #00fff7cc, 0 0 18px #0078ff33, 0 2px 22px #18d7ff88;
+            transform: scale(1.05);
+        }
+        @keyframes neon-btn {
+            0% { box-shadow: 0 0 24px #00fff7cc, 0 2px 13px #18d7ff99;}
+            100% { box-shadow: 0 0 42px #00fff7ee, 0 4px 29px #0ecfff66;}
+        }
+        .mic-icon {
+            width: 34px; height: 34px;
+            filter: drop-shadow(0 0 14px #00fff7cc);
+        }
+        /* Minimal floating text, cyberpunk font, neon accent */
+        .float-msg {
+            margin-top: 22px;
+            text-align: center;
+            font-size: 1.13rem;
+            color: #aafcff;
+            text-shadow: 0 0 12px #00fff7a3, 0 2px 10px #0058fa18;
+            letter-spacing: 0.02em;
+            font-family: 'Orbitron', 'Inter', Arial, sans-serif;
+            opacity: 0.93;
+            z-index: 12;
+            transition: all 0.18s;
+            background: transparent !important;
+        }
+        .logo-center {
+            margin: -11px 0 0 0;
+            width: 48px;
+            display: block;
+            opacity: 1;
+            filter: none;
+            user-select: none;
+            z-index: 20;
+        }
+        @media (max-width: 600px) {
+            .center-mic { top: 32%; }
+            .float-msg { font-size: 0.96rem; }
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="center-mic">
+        <button id="micBtn" class="mic-btn" title="Talk">
+            <svg class="mic-icon" fill="none" stroke="#12263a" stroke-width="2" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="15" stroke="#0ff" stroke-width="1.3" />
+                <rect x="12" y="8" width="8" height="14" rx="4" fill="#00fff7"/>
+                <rect x="15" y="22" width="2" height="4" rx="1" fill="#00fff7"/>
+            </svg>
+        </button>
+        <canvas id="pulseCanvas" width="80" height="420"></canvas>
+        <img src="static/logo.png" alt="BotWot Logo" class="logo-center" style="width:96px;">
+        <div class="float-msg" id="floatMsg">
+            🎤 <b>Listening...</b>
+        </div>
+    </div>
+    <script>
+        // --- CYBERPUNK PULSE ---
+        const canvas = document.getElementById('pulseCanvas');
+        const ctx = canvas.getContext('2d');
+        let drawAnim;
+
+        function drawPulse(data, color="#00fff7", glow="#00fff7cc") {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.save();
+            ctx.beginPath();
+            ctx.shadowColor = glow;
+            ctx.shadowBlur = 15;
+            let midX = canvas.width/2;
+            let slice = canvas.height / data.length;
+            for (let i = 0; i < data.length; i++) {
+                let heart = Math.abs(Math.sin(i / 3.4 + Date.now()/260));
+                let val = (data[i] - 128) / 128.0;
+                let x = midX + val * 25 * heart;
+                let y = i * slice;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.8;
+            ctx.stroke();
+            ctx.restore();
+        }
+        // Idle shimmer
+        function idlePulse() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            let t = Date.now()/530;
+            ctx.save();
+            ctx.beginPath();
+            ctx.shadowColor = "#00fff7cc";
+            ctx.shadowBlur = 13;
+            for (let i = 0; i < 40; i++) {
+                let x = canvas.width/2 + Math.sin(i/2.5 + t)*12 + Math.sin(i+t/2)*3;
+                let y = i * (canvas.height/40);
+                ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = "#0ff";
+            ctx.lineWidth = 2.1;
+            ctx.stroke();
+            ctx.restore();
+            drawAnim = requestAnimationFrame(idlePulse);
+        }
+        idlePulse();
+
+        // --- Mic Button Logic ---
+        const micBtn = document.getElementById('micBtn');
+        const floatMsg = document.getElementById('floatMsg');
+        let isListening = false;
+
+        // --- Hook up to backend (WebSocket) to handle *voice only* reply ---
+        // This is a minimal skeleton.
+        let ws, mediaRecorder, audioContext, analyser, micStream;
+
+        micBtn.addEventListener('click', async () => {
+            if (!isListening) {
+                // Start listening: open WebSocket and start recording
+                ws = new WebSocket(`ws://${window.location.host}/ws/voice-chat/` + Math.random().toString(36).substr(2, 9));
+                floatMsg.innerHTML = "🎤 <b>Listening...</b>";
+                micBtn.classList.add('listening');
+                isListening = true;
+
+                ws.onopen = async () => {
+                    // Mic recording
+                    try {
+                        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        const source = audioContext.createMediaStreamSource(micStream);
+                        analyser = audioContext.createAnalyser();
+                        source.connect(analyser);
+                        analyser.fftSize = 64;
+
+                        // Animate pulse to mic input
+                        function animatePulse() {
+                            if (!isListening) return idlePulse();
+                            let dataArray = new Uint8Array(analyser.frequencyBinCount);
+                            analyser.getByteTimeDomainData(dataArray);
+                            drawPulse(dataArray, "#00fff7", "#00fff7cc");
+                            drawAnim = requestAnimationFrame(animatePulse);
+                        }
+                        animatePulse();
+
+                        mediaRecorder = new MediaRecorder(micStream);
+                        mediaRecorder.ondataavailable = async (event) => {
+                            if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    const base64Data = reader.result.split(',')[1];
+                                    ws.send(JSON.stringify({
+                                        type: 'audio',
+                                        data: base64Data
+                                    }));
+                                };
+                                reader.readAsDataURL(event.data);
+                            }
+                        };
+                        mediaRecorder.start(250);
+                    } catch (e) {
+                        floatMsg.innerHTML = "<span style='color:#fa7;'>Mic access denied</span>";
+                        isListening = false;
+                        micBtn.classList.remove('listening');
+                        idlePulse();
+                    }
+                };
+
+                ws.onmessage = (event) => {
+                    // When bot replies, your backend should play TTS reply audio to user directly (not display text)
+                    // Optionally, you could show a status here like "Speaking..." if you want
+                    floatMsg.innerHTML = "🤖 <b>Replying...</b>";
+                };
+
+                ws.onclose = () => {
+                    floatMsg.innerHTML = "🎤 <b>Tap to listen</b>";
+                    micBtn.classList.remove('listening');
+                    isListening = false;
+                    idlePulse();
+                    if (mediaRecorder) mediaRecorder.stop();
+                    if (audioContext) audioContext.close();
+                    if (micStream) micStream.getTracks().forEach(track => track.stop());
+                };
+
+                ws.onerror = (e) => {
+                    floatMsg.innerHTML = "<span style='color:#fa7;'>WebSocket error</span>";
+                    micBtn.classList.remove('listening');
+                    isListening = false;
+                    idlePulse();
+                    if (mediaRecorder) mediaRecorder.stop();
+                    if (audioContext) audioContext.close();
+                    if (micStream) micStream.getTracks().forEach(track => track.stop());
+                };
+
+            } else {
+                // Stop listening
+                if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+                if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'stop' }));
+                ws && ws.close();
+                micBtn.classList.remove('listening');
+                isListening = false;
+                floatMsg.innerHTML = "🎤 <b>Tap to listen</b>";
+                idlePulse();
+                if (mediaRecorder) mediaRecorder.stop();
+                if (audioContext) audioContext.close();
+                if (micStream) micStream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>
+
