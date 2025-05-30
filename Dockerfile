@@ -1,25 +1,32 @@
-# Use an official Python runtime as a parent image
+# Use slim python as base
 FROM python:3.11-slim
 
-# Set the working directory
+# Set working directory inside the container
 WORKDIR /app
 
-# Upgrade pip to the latest version
+# Install system dependencies needed for pyaudio (gcc, portaudio, etc.)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        libportaudio2 \
+        portaudio19-dev \
+        libasound2-dev \
+        && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
 RUN pip install --no-cache-dir --upgrade pip
 
-# Copy the requirements file and install dependencies
+# Copy requirements first for better cache
 COPY requirements.txt .
 
+# Install all python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers and dependencies
-RUN playwright install && playwright install-deps
-
-# Copy the rest of the application code
+# Copy entire project
 COPY . .
 
-# Expose the port your FastAPI app runs on
-EXPOSE 8000
+# Expose the port (Cloud Run uses 8080 by default)
+EXPOSE 8080
 
-# Run FastAPI using Uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Entrypoint for uvicorn (FastAPI ASGI server)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
