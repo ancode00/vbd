@@ -176,7 +176,7 @@
         micBtn.addEventListener('click', async () => {
             if (!isListening) {
                 // Start listening: open WebSocket and start recording
-                ws = new WebSocket('wss://vbd-kzlh.onrender.com/ws/voice-chat/' + Math.random().toString(36).substr(2, 9));
+                ws = new WebSocket('wss://vbd-kzlh.onrender.com' + Math.random().toString(36).substr(2, 9));
                 floatMsg.innerHTML = "🎤 <b>Listening...</b>";
                 micBtn.classList.add('listening');
                 isListening = true;
