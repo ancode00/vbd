@@ -1,7 +1,6 @@
 import os
 from elevenlabs.client import ElevenLabs
 from elevenlabs.conversational_ai.conversation import Conversation
-from elevenlabs.conversational_ai.default_audio_interface import DefaultAudioInterface
 from dotenv import load_dotenv
 
 class VoiceChat:
@@ -17,7 +16,7 @@ class VoiceChat:
             self.client,
             self.agent_id,
             requires_auth=bool(self.api_key),
-            audio_interface=DefaultAudioInterface(),
+            # REMOVED audio_interface (was causing PyAudio error)
             callback_agent_response=on_agent_response or (lambda response: print(f"Agent: {response}")),
             callback_user_transcript=on_user_transcript or (lambda transcript: print(f"User: {transcript}"))
         )
