@@ -236,7 +236,9 @@
                     isListening = false;
                     idlePulse();
                     if (mediaRecorder) mediaRecorder.stop();
-                    if (audioContext) audioContext.close();
+                    if (audioContext && audioContext.state !== "closed") {
+                        audioContext.close();
+                    }
                     if (micStream) micStream.getTracks().forEach(track => track.stop());
                 };
 
@@ -246,7 +248,9 @@
                     isListening = false;
                     idlePulse();
                     if (mediaRecorder) mediaRecorder.stop();
-                    if (audioContext) audioContext.close();
+                    if (audioContext && audioContext.state !== "closed") {
+                        audioContext.close();
+                    }
                     if (micStream) micStream.getTracks().forEach(track => track.stop());
                 };
 
@@ -260,7 +264,9 @@
                 floatMsg.innerHTML = "🎤 <b>Tap to listen</b>";
                 idlePulse();
                 if (mediaRecorder) mediaRecorder.stop();
-                if (audioContext) audioContext.close();
+                if (audioContext && audioContext.state !== "closed") {
+                    audioContext.close();
+                }
                 if (micStream) micStream.getTracks().forEach(track => track.stop());
             }
         });
