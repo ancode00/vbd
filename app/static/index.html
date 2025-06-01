@@ -71,7 +71,6 @@
             width: 34px; height: 34px;
             filter: drop-shadow(0 0 14px #00fff7cc);
         }
-        /* Minimal floating text, cyberpunk font, neon accent */
         .float-msg {
             margin-top: 22px;
             text-align: center;
@@ -170,19 +169,31 @@
         let isListening = false;
 
         // --- Hook up to backend (WebSocket) to handle *voice only* reply ---
-        // This is a minimal skeleton.
         let ws, mediaRecorder, audioContext, analyser, micStream;
+
+        function cleanupAudio() {
+            try {
+                if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+            } catch(e) {}
+            if (audioContext && audioContext.state !== "closed") {
+                audioContext.close().catch(()=>{});
+            }
+            if (micStream) {
+                micStream.getTracks().forEach(track => track.stop());
+            }
+            audioContext = null;
+            micStream = null;
+            analyser = null;
+        }
 
         micBtn.addEventListener('click', async () => {
             if (!isListening) {
-                // Start listening: open WebSocket and start recording
                 ws = new WebSocket('wss://vbd-kzlh.onrender.com/ws/voice-chat/' + Math.random().toString(36).substr(2, 9));
                 floatMsg.innerHTML = "🎤 <b>Listening...</b>";
                 micBtn.classList.add('listening');
                 isListening = true;
 
                 ws.onopen = async () => {
-                    // Mic recording
                     try {
                         micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -191,7 +202,6 @@
                         source.connect(analyser);
                         analyser.fftSize = 64;
 
-                        // Animate pulse to mic input
                         function animatePulse() {
                             if (!isListening) return idlePulse();
                             let dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -221,12 +231,11 @@
                         isListening = false;
                         micBtn.classList.remove('listening');
                         idlePulse();
+                        cleanupAudio();
                     }
                 };
 
                 ws.onmessage = (event) => {
-                    // When bot replies, your backend should play TTS reply audio to user directly (not display text)
-                    // Optionally, you could show a status here like "Speaking..." if you want
                     floatMsg.innerHTML = "🤖 <b>Replying...</b>";
                 };
 
@@ -235,11 +244,7 @@
                     micBtn.classList.remove('listening');
                     isListening = false;
                     idlePulse();
-                    if (mediaRecorder) mediaRecorder.stop();
-                    if (audioContext && audioContext.state !== "closed") {
-                        audioContext.close();
-                    }
-                    if (micStream) micStream.getTracks().forEach(track => track.stop());
+                    cleanupAudio();
                 };
 
                 ws.onerror = (e) => {
@@ -247,11 +252,7 @@
                     micBtn.classList.remove('listening');
                     isListening = false;
                     idlePulse();
-                    if (mediaRecorder) mediaRecorder.stop();
-                    if (audioContext && audioContext.state !== "closed") {
-                        audioContext.close();
-                    }
-                    if (micStream) micStream.getTracks().forEach(track => track.stop());
+                    cleanupAudio();
                 };
 
             } else {
@@ -263,14 +264,9 @@
                 isListening = false;
                 floatMsg.innerHTML = "🎤 <b>Tap to listen</b>";
                 idlePulse();
-                if (mediaRecorder) mediaRecorder.stop();
-                if (audioContext && audioContext.state !== "closed") {
-                    audioContext.close();
-                }
-                if (micStream) micStream.getTracks().forEach(track => track.stop());
+                cleanupAudio();
             }
         });
     </script>
 </body>
 </html>
-
